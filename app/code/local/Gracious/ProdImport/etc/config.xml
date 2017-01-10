@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<config>
+	<modules>
+		<Gracious_ProdImport>
+			<version>0.1.0</version>    <!-- Version number of your module -->
+		</Gracious_ProdImport>
+	</modules>
+	<crontab>
+		<jobs>
+<!--			<gracious_prodimport_cron>
+
+				<schedule>
+					<cron_expr>*/1 * * * *</cron_expr>
+				</schedule>
+				<run>
+					<model>gracious_prodimport/observer::createProduct</model>
+				</run>
+			</gracious_prodimport_cron>-->
+		</jobs>
+	</crontab>	
+	<global>
+		
+		<models>
+			<gracious_prodimport>
+				<class>Gracious_ProdImport_Model</class>
+			</gracious_prodimport>
+		</models>
+		<events>
+			<catalog_product_save_after>
+				<observers>
+					<gracious_prodimport>
+						<class>gracious_prodimport/observer</class>
+						<method>logUpdate</method>
+						<type>singleton</type>
+					</gracious_prodimport>
+				</observers>
+			</catalog_product_save_after>
+		</events>
+	</global>    
+	<frontend>
+		<routers>
+			<prodimport>
+				<use>standard</use>
+				<args>
+					<module>Gracious_ProdImport</module>
+					<frontName>ProductImport</frontName>
+				</args>
+			</prodimport>
+		</routers>
+	</frontend>
+</config>
