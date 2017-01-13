@@ -49,13 +49,14 @@ class Gracious_Shell_Gimporter extends Mage_Shell_Abstract {
 		echo '</pre>';
 		die();
 
-$simpleProductsData = array(
-    'label'         => $simpleProduct->getAttributeText('color'),
-    'attribute_id'  => $attr->getId(),
-    'value_index'   => $sync->getValueIdByAttribute('color', 'green'),
-    'is_percent'    => 0,
-    'pricing_value' => $simpleProduct->getPrice(),
-);
+		$simpleProductsData = array(
+				'label'         => $simpleProduct->getAttributeText('color'),
+				'attribute_id'  => $attr->getId(),
+				'value_index'   => $sync->getValueIdByAttribute('color', 'green'),
+				'is_percent'    => 0,
+				'pricing_value' => $simpleProduct->getPrice(),
+		);
+
 		$configurableProductsData = array();
 		$configurableProductsData[$simpleProduct->getId()] = $simpleProductsData;
 		$configurableAttributesData[0]['values'][] = $simpleProductsData;
