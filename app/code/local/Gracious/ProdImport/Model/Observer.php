@@ -1,6 +1,4 @@
 <?php
-
-
 class Gracious_ProdImport_Model_Observer {
 	// Magento passes a Varien_Event_Observer object as the first parameter of dispatched events.
 	public function logUpdate(Varien_Event_Observer $observer) {
