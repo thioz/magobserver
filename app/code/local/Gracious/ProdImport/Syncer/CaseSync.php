@@ -93,12 +93,10 @@ class Gracious_ProdImport_Syncer_CaseSync {
 			'small_image' => $path,
 			'image' => $path,
 		);
+ 
 
-// Remove unset images, add image to gallery if exists
-		$importDir = Mage::getBaseDir('media') . DS . 'import/';
-
-		foreach ($mediaArray as $imageType => $fileName) {
-			$filePath = $importDir . $fileName;
+		foreach ($mediaArray as $imageType => $filePath) {
+ 
 			if (file_exists($filePath)) {
 				try {
 					$product->addImageToMediaGallery($filePath, $imageType, false);

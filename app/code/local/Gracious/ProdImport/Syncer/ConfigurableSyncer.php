@@ -1,21 +1,34 @@
 <?php
 
 class Gracious_ProdImport_Syncer_ConfigurableSyncer extends Gracious_ProdImport_Syncer_CaseSync {
-	function addSimpleProduct($configProduct, $simpleObject, $attributeName) {
+	
+	function addSimpleProduct($configProduct, $product) {
 		$configProduct->setCanSaveConfigurableAttributes(true);
 		$configurableAttributesData = $configProduct->getTypeInstance()->getConfigurableAttributesAsArray();
-		$childs=$this->getChildObjectsIds($configProduct);
 		$configurableProductsData = array();
-
-		foreach($childs as $child){
-
-			$simple = Mage::getModel('catalog/product')->load($child->getId());
-			$simpleProductsData=$this->makeSimpleData($simple, 'color');
-			$configurableAttributesData[0]['values'][] = $simpleProductsData;			
-			$configurableProductsData[$child->getId()] = $simpleProductsData;
+		$used = $configProduct->getTypeInstance()->getUsedProducts();
+		$used[] = $product;
+		$attrkeys = [];
+		foreach ($configurableAttributesData as $key => $attrData) {
+			$attrkeys[$attrData['attribute_code']] = $key;
 		}
-		$configurableProductsData[$simpleObject->getId()] = $this->makeSimpleData($simpleObject, 'color');
-		$configurableAttributesData[0]['values'][] =  $this->makeSimpleData($simpleObject, 'color');		
+		foreach ($used as $usedProd) {
+			$simpleProduct = Mage::getModel('catalog/product')->load($usedProd->getId());
+			$configurableProductsData[$simpleProduct->getId()] = [];
+			foreach ($attrkeys as $code => $key) {
+				
+				$attr = $this->getAttribute($code);
+				$simpleData=[
+					'label' => $simpleProduct->getAttributeText($code),
+					'attribute_id' => $attr->getId(),
+					'value_index' => $this->getValueIdByAttribute($code, $simpleProduct->getAttributeText($code)),
+					'is_percent' => 0,
+					'pricing_value' => $simpleProduct->getPrice(),
+				];
+				$configurableProductsData[$simpleProduct->getId()][] = $simpleData;
+				$configurableAttributesData[$key]['values'][] = $simpleData;
+			}
+		}
 		$configProduct->setConfigurableProductsData($configurableProductsData);
 		$configProduct->setConfigurableAttributesData($configurableAttributesData);
 		$configProduct->save();

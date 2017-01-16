@@ -27,23 +27,93 @@ class Gracious_Shell_Gimporter extends Mage_Shell_Abstract {
 	public function run() {
 		$sync = new Gracious_ProdImport_Syncer_CaseSync();
 		$sync = new Gracious_ProdImport_Syncer_ConfigurableSyncer();
-		
-		$sync->createSimpleProduct([]);
+		$builder = new Gracious_ProdImport_Builder_ProductBuilder();
+
+		$p = $builder->build([
+			'type' => 'simple',
+			'attributes' => [
+				'color' => 'green',
+				'material' => 'silver',
+				'size' => 'm'
+			],
+			'images'=>Mage::getBaseDir('media') . DS . 'import/'.'c5zya47b2yt8_800.jpg',
+			'price' => 130,
+			'name' => 'ring2-{attr_material}-{attr_color}',
+			'stock'=>[
+				'use_config_manage_stock'=>0,
+				'manage_stock'=>1,
+				'is_in_stock'=>1,
+				'qty'=>100,
+			],
+			'description' => 'poep',
+			'short_description' => 'poep',
+			'taxclass' => 0,
+			'status' => 1,
+			'weight' => 0,
+			'attribute_set' => 9,
+			'sku' => 'ring2-{attr_material}-{attr_color}',
+			'websiteids' => [1],
+			'visibility' => Mage_Catalog_Model_Product_Visibility::VISIBILITY_BOTH
+		]);
+
+		//$p->save();
+		$configProduct = Mage::getModel('catalog/product')->load(54);
+		//$sync->addImageToProduct($configProduct, Mage::getBaseDir('media') . DS . 'import/'.'c5zya47b2yt8_800.jpg');
+		$sync->addSimpleProduct($configProduct, $p);
+		die();
+		//$sync->addSimpleProduct($configProduct, $simpleProduct, 'color');
+		//$configProduct->getTypeInstance()->setUsedProductAttributeIds(array($attr->getId()));
+		$configurableAttributesData = $configProduct->getTypeInstance()->getConfigurableAttributesAsArray();
+		$configurableProductsData = array();
+		$used = $configProduct->getTypeInstance()->getUsedProducts();
+		$used[] = $p;
+		$attrkeys = [];
+		foreach ($configurableAttributesData as $key => $attrData) {
+			$attrkeys[$attrData['attribute_code']] = $key;
+		}
+		foreach ($used as $usedProd) {
+			$simpleProduct = Mage::getModel('catalog/product')->load($usedProd->getId());
+			$configurableProductsData[$simpleProduct->getId()] = [];
+			foreach ($attrkeys as $code => $key) {
+				$attr = $sync->getAttribute($code);
+				$configurableProductsData[$simpleProduct->getId()][] = [
+					'label' => $simpleProduct->getAttributeText($code),
+					'attribute_id' => $attr->getId(),
+					'value_index' => $sync->getValueIdByAttribute($code, $simpleProduct->getAttributeText($code)),
+					'is_percent' => 0,
+					'pricing_value' => $simpleProduct->getPrice(),
+				];
+				$configurableAttributesData[$key]['values'][] = [
+					'label' => $simpleProduct->getAttributeText($code),
+					'attribute_id' => $attr->getId(),
+					'value_index' => $sync->getValueIdByAttribute($code, $simpleProduct->getAttributeText($code)),
+					'is_percent' => 0,
+					'pricing_value' => $simpleProduct->getPrice(),
+				];
+			}
+		}
+		$configProduct->setConfigurableProductsData($configurableProductsData);
+		$configProduct->setConfigurableAttributesData($configurableAttributesData);
+		$configProduct->save();
+		echo '</pre>';
+		//$sync->createSimpleProduct([]);
 		die();
 		$attr = $sync->getAttribute('color');
 		$simpleProduct = Mage::getModel('catalog/product')->load(18);
+
+
+
 		echo '<pre>';
 		print_r($simpleProduct->getData());
 		echo '</pre>';
 		die();
 		$configProduct = Mage::getModel('catalog/product')->load(28);
 		//$sync->addSimpleProduct($configProduct, $simpleProduct, 'color');
-	
 		//$configProduct->getTypeInstance()->setUsedProductAttributeIds(array($attr->getId()));
 		$configurableAttributesData = $configProduct->getTypeInstance()->getConfigurableAttributesAsArray();
 		$configProduct->setCanSaveConfigurableAttributes(true);
 		$childProducts = Mage::getModel('catalog/product_type_configurable')
-                    ->getUsedProducts(null,$configProduct);
+			->getUsedProducts(null, $configProduct);
 		echo '<pre>';
 		print_r($configurableAttributesData);
 		echo '</pre>';
@@ -57,10 +127,11 @@ class Gracious_Shell_Gimporter extends Mage_Shell_Abstract {
 				'pricing_value' => $simpleProduct->getPrice(),
 		);
 
+
 		$configurableProductsData = array();
 		$configurableProductsData[$simpleProduct->getId()] = $simpleProductsData;
 		$configurableAttributesData[0]['values'][] = $simpleProductsData;
- 
+
 //		die();
 		$configProduct->setConfigurableProductsData($configurableProductsData);
 		$configProduct->setConfigurableAttributesData($configurableAttributesData);
@@ -69,7 +140,7 @@ class Gracious_Shell_Gimporter extends Mage_Shell_Abstract {
 		echo '</pre>';
 		die();
 		$configProduct->save();
-		
+
 
 //		 $sku = 'trui-blue';
 //        $title = 'bla dikke trui';
