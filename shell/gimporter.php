@@ -23,38 +23,210 @@ class Gracious_Shell_Gimporter extends Mage_Shell_Abstract {
 		}
 	}
 
+	function createConfigProduct($data) {
+		$prod = Mage::getModel('catalog/product');
+		$prod->setWebsiteIds([1])
+			->setAttributeSetId(11) // Ex: 100
+			->setTypeId('configurable')
+			->setCreatedAt(strtotime('now'))
+			->setUpdatedAt(strtotime('now'))
+			->setSku($data['sku']) // Ex: 'foo_bar'
+			->setName($data['name']) // Ex: 'Foo Bar'
+			->setWeight(1) // Ex: 11.22
+			->setStatus(1)
+			->setTaxClassId(2)
+			->setVisibility(Mage_Catalog_Model_Product_Visibility::VISIBILITY_BOTH)
+			->setPrice(0) // Ex: 19.49
+			->setCategoryIds([3]) // Ex: 19.49
+			->setDescription($data['description']) // Ex: 'Description Here!'
+			->setShortDescription($data['name']) // Ex: 'Foo Name'
+			->setStockData([
+				'use_config_manage_stock' => 0,
+				'manage_stock' => 1,
+				'is_in_stock' => 1,
+				'qty' => 1,
+		]);
+
+		return $prod;
+	}
+
 	// Shell script point of entry
 	public function run() {
 		$sync = new Gracious_ProdImport_Syncer_CaseSync();
 		$sync = new Gracious_ProdImport_Syncer_ConfigurableSyncer();
 		$builder = new Gracious_ProdImport_Builder_ProductBuilder();
 
-		$p = $builder->build([
-			'type' => 'simple',
-			'attributes' => [
-				'color' => 'green',
-				'material' => 'silver',
-				'size' => 'm'
-			],
-			'images'=>Mage::getBaseDir('media') . DS . 'import/'.'c5zya47b2yt8_800.jpg',
-			'price' => 130,
-			'name' => 'ring2-{attr_material}-{attr_color}',
-			'stock'=>[
-				'use_config_manage_stock'=>0,
-				'manage_stock'=>1,
-				'is_in_stock'=>1,
-				'qty'=>100,
-			],
-			'description' => 'poep',
-			'short_description' => 'poep',
-			'taxclass' => 0,
-			'status' => 1,
-			'weight' => 0,
-			'attribute_set' => 9,
-			'sku' => 'ring2-{attr_material}-{attr_color}',
-			'websiteids' => [1],
-			'visibility' => Mage_Catalog_Model_Product_Visibility::VISIBILITY_BOTH
-		]);
+//		$configurableProductsData = [];
+//		$prod = Mage::getModel('catalog/product')->load(71);
+//		$stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($prod);
+//		
+//		
+//		print_r($stock->getData());
+//		die();
+
+		$attributeIds = [
+			'color' => $sync->getAttribute('color')->getId(),
+			'type' => $sync->getAttribute('type')->getId(),
+		];
+//		$attrKeys = [];
+//		
+//		$configurableAttributesData = $prod->getTypeInstance()->getConfigurableAttributesAsArray();		
+//		foreach($configurableAttributesData as $key => $attribute){
+//			$attrKeys[$attribute['attribute_code']]  = $key;
+//		}
+//		
+//		$simpleIds = [70,71];
+//		foreach($simpleIds as $simpleId){
+//			
+//			$simpleProduct = Mage::getModel('catalog/product')->load($simpleId);
+//			foreach($attributeIds as $code => $attrId){
+//				$simpleProductsData = array(
+//						'label'         => $simpleProduct->getAttributeText($code),
+//						'attribute_id'  => $attrId,
+//						'value_index'   => (int) $simpleProduct->getData($code),
+//						'is_percent'    => 0,
+//						'pricing_value' => $simpleProduct->getPrice(),
+//				);
+//				$key=$attrKeys[$code];
+//				$configurableAttributesData[$key]['values'][] = $simpleProductsData;
+//				$configurableProductsData[$simpleProduct->getId()]=$simpleProductsData;
+//
+//			}
+//		}
+//		$prod->setConfigurableProductsData($configurableProductsData);
+//		$prod->setConfigurableAttributesData($configurableAttributesData);
+//		$prod->setCanSaveConfigurableAttributes(true);
+//		$prod->save();
+		//print_r($configurableAttributesData);
+//		foreach ($used as $usedProd) {
+//			$simpleProduct = Mage::getModel('catalog/product')->load($usedProd->getId());
+//			$configurableProductsData[$simpleProduct->getId()] = [];
+//			foreach ($attrkeys as $code => $key) {
+//
+//				$attr = $this->getAttribute($code);
+//				$simpleData = [
+//					'label' => $simpleProduct->getAttributeText($code),
+//					'attribute_id' => $attr->getId(),
+//					'value_index' => $this->getValueIdByAttribute($code, $simpleProduct->getAttributeText($code)),
+//					'is_percent' => 0,
+//					'pricing_value' => $simpleProduct->getPrice(),
+//				];
+//				$configurableProductsData[$simpleProduct->getId()][] = $simpleData;
+//			}
+//		}
+		$url = 'https://www.ontwerpeencase.nl/api/product_list.json?email=suraj@graciousstudios.nl&password=gracious123';
+		$list = json_decode(file_get_contents($url));
+
+		foreach ($list as $cat) {
+			$brand = $cat->brand;
+			$name = $cat->product_name;
+
+			$brandOptionId = $sync->getOrCreateAttributeValueOption('phone_brand', $brand);
+
+			$model = $cat->phone_model;
+			$modelOptionId = $sync->getOrCreateAttributeValueOption('phone_model', $model);
+
+			$attributeKeys = [];
+
+			$configurableProduct = $this->createConfigProduct([
+				'sku' => 'prod_' . rand(1, 1949),
+				'name' => $name,
+				'description' => 'prod '
+			]);
+
+			$configurableProduct->setAttributeSetId(13);
+
+			$configurableProduct->setPrice(0);
+			$configurableProduct->setCategoryIds([3, 6]);
+			$configurableProduct->setData('phone_model', $modelOptionId);
+			$configurableProduct->setData('phone_brand', $brandOptionId);
+
+			$configurableProduct->getTypeInstance()->setUsedProductAttributeIds(array_values($attributeIds));
+
+			$configurableAttributesData = $configurableProduct->getTypeInstance()->getConfigurableAttributesAsArray();
+			foreach ($configurableAttributesData as $key => $attribute) {
+				$attributeKeys[$attribute['attribute_code']] = $key;
+			}
+			$configurableProductsData = array();
+
+			foreach ($cat->versions as $version) {
+				$type = $version->type;
+				$typeOptionId = $sync->getOrCreateAttributeValueOption('type', $type);
+				$price = $version->price->EUR;
+
+
+
+
+				foreach ($version->colors as $colorProduct) {
+
+					$color = $colorProduct->color;
+					$colorOptionId = $sync->getOrCreateAttributeValueOption('color', $color);
+					$sku = $colorProduct->SKU_Magento;
+
+					$simpleProduct = $sync->getProductByAttribute('sku', $sku);
+					if (!$simpleProduct) {
+
+						$simpleProduct = new Mage_Catalog_Model_Product();
+						$data = [
+							'price' => $price,
+							'weight' => 1,
+							'name' => $name . '-' . $color,
+							'attribute_set_id' => 13,
+							'visibility' => Mage_Catalog_Model_Product_Visibility::VISIBILITY_BOTH,
+							'is_in_stock' => 1,
+							'qty' => 199,
+						];
+						$simpleProduct->setData($data);
+						$simpleProduct->setTypeId('simple');
+						$simpleProduct->setPriceCalculation(false);
+						$simpleProduct->setStatus(1);
+						$simpleProduct->setWebsiteIDs(array(1)); // put your website ids here
+						$simpleProduct->setTaxClassId(0);
+						$simpleProduct->setSku($sku);
+						$simpleProduct->setStockData([
+							'use_config_manage_stock' => 1,
+							'manage_stock' => 1,
+							'is_in_stock' => 1,
+							'qty' => 999,
+						]);
+						// add attributes 
+						$attributes = [
+							'color' => $colorOptionId,
+							'type' => $typeOptionId,
+						];
+						foreach ($attributes as $code => $valueId) {
+							$simpleProduct->setData($code, $valueId);
+						}
+						$simpleProduct->setData('phone_model', $modelOptionId);
+						$simpleProduct->setData('phone_brand', $brandOptionId);
+
+						$simpleProduct->save();
+
+						foreach ($attributes as $code => $valueId) {
+							$simpleProductsData = array(
+								'label' => $simpleProduct->getAttributeText($code),
+								'attribute_id' => $attributeIds[$code],
+								'value_index' => $valueId,
+								'is_percent' => 0,
+								'pricing_value' => $simpleProduct->getPrice(),
+							);
+
+							$key = $attributeKeys[$code];
+							$configurableAttributesData[$key]['values'][] = $simpleProductsData;
+							$configurableProductsData[$simpleProduct->getId()] = $simpleProductsData;
+						}
+					}
+				}
+			}
+			$configurableProduct->setConfigurableProductsData($configurableProductsData);
+			$configurableProduct->setConfigurableAttributesData($configurableAttributesData);
+			$configurableProduct->setCanSaveConfigurableAttributes(true);
+			$configurableProduct->save();
+			die();
+		}
+
+		die();
+
 
 		//$p->save();
 		$configProduct = Mage::getModel('catalog/product')->load(54);
