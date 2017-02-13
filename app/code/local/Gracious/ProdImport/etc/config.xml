@@ -36,6 +36,7 @@
 				</observers>
 			</catalog_product_save_after>
 		</events>
+ 
 	</global>    
 	<frontend>
 		<routers>
@@ -47,5 +48,6 @@
 				</args>
 			</prodimport>
 		</routers>
+	
 	</frontend>
 </config>

@@ -12,15 +12,14 @@ class Gracious_ProdImport_Syncer_CaseSync {
 		'attribute_set_id' => 9,
 		'category_ids' => [5],
 		'visibility' => Mage_Catalog_Model_Product_Visibility::VISIBILITY_BOTH,
-		'is_in_stock'=>1,
-		'qty'=>199,
+		'is_in_stock' => 1,
+		'qty' => 199,
 		'stock' => array(
 			'is_in_stock' => 1,
 			'qty' => 999,
 			'manage_stock' => 0,
 			'use_config_manage_stock' => 1
 		),
-		
 	];
 
 	/**
@@ -50,17 +49,17 @@ class Gracious_ProdImport_Syncer_CaseSync {
 
 		$product = new Mage_Catalog_Model_Product();
 		$product->setData($data);
-		
+
 		$product->setTypeId('simple');
-        $product->setPriceCalculation(false);
-        $product->setStatus(1);
-        $product->setWebsiteIDs(array(1));// put your website ids here
-        $product->setTaxClassId(0); 
-        $product->setCategoryIds($data['category_ids']);
+		$product->setPriceCalculation(false);
+		$product->setStatus(1);
+		$product->setWebsiteIDs(array(1)); // put your website ids here
+		$product->setTaxClassId(0);
+		$product->setCategoryIds($data['category_ids']);
 		echo '<pre>';
 		print_r($data);
 		echo '</pre>';
-				$product->save();
+		$product->save();
 
 		return $product;
 
@@ -93,10 +92,10 @@ class Gracious_ProdImport_Syncer_CaseSync {
 			'small_image' => $path,
 			'image' => $path,
 		);
- 
+
 
 		foreach ($mediaArray as $imageType => $filePath) {
- 
+
 			if (file_exists($filePath)) {
 				try {
 					$product->addImageToMediaGallery($filePath, $imageType, false);
@@ -130,7 +129,19 @@ class Gracious_ProdImport_Syncer_CaseSync {
 		}
 	}
 
- 
+	function getOrCreateAttributeValueOption($name, $value, $label = null) {
+		$optionId = $this->getValueIdByAttribute($name, $value);
+		if (!$optionId) {
+			if (!$label) {
+				$label = $value;
+			}
+			$this->addAttributeValueOption($name, $value, $label);
+			$optionId = $this->getValueIdByAttribute($name, $value);
+
+		}
+		return $optionId;
+	}
+
 	function addAttributeValueOption($attr, $value, $label) {
 		$installer = new Mage_Eav_Model_Entity_Setup('core_setup');
 		$installer->startSetup();
@@ -160,6 +171,10 @@ class Gracious_ProdImport_Syncer_CaseSync {
 			'image' => $product->getData('image'),
 		];
 		return $data;
+	}
+	
+	function getProductByAttribute($attribute, $value){
+		return Mage::getModel('catalog/product')->loadByAttribute($attribute,$value);
 	}
 
 }
