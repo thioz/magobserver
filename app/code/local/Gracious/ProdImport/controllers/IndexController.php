@@ -7,7 +7,7 @@ class Gracious_ProdImport_IndexController extends Mage_Core_Controller_Front_Act
 
         $url = 'https://www.ontwerpeencase.nl/api/product_list.json?email=suraj@graciousstudios.nl&password=gracious123';
         $list = json_decode(file_get_contents($url));
-        $attrs = [
+        $attributes = [
             'type' => [],
             'manufacturer' => [],
             'model' => [],
@@ -15,22 +15,22 @@ class Gracious_ProdImport_IndexController extends Mage_Core_Controller_Front_Act
         ];
         foreach ($list as $cat) {
             $brand = $cat->brand;
-            $attrs['manufacturer'][$brand] = $brand;
+            $attributes['manufacturer'][$brand] = $brand;
             $modelKey = md5(strtolower(trim($cat->phone_model)));
-            $attrs['model'][$modelKey] = $cat->phone_model;
+            $attributes['model'][$modelKey] = $cat->phone_model;
             foreach ($cat->versions as $version) {
                 $versionKey = md5(strtolower(trim($version->type)));
-                $attrs['type'][$versionKey] = $version->type;
+                $attributes['type'][$versionKey] = $version->type;
                 foreach ($version->colors as $color) {
                     $colorKey = md5(strtolower(trim($color->color)));
 
-                    $attrs['color'][$colorKey] = $color->color;
+                    $attributes['color'][$colorKey] = $color->color;
                 }
             }
         }
-        foreach ($attrs as $attr => $vals) {
-            foreach ($vals as $val) {
-                $id = $this->getOrCreateAttributeValueId($attr, $val);
+        foreach ($attributes as $attibute => $values) {
+            foreach ($values as $value) {
+                $id = $this->getOrCreateAttributeValueId($attributes, $value);
             }
         }
     }
@@ -44,6 +44,7 @@ class Gracious_ProdImport_IndexController extends Mage_Core_Controller_Front_Act
             $brand = $cat->brand;
             $model = $cat->phone_model;
             foreach ($cat->versions as $version) {
+
                 $type = $version->type;
                 $price = $version->price->EUR;
 
@@ -55,13 +56,13 @@ class Gracious_ProdImport_IndexController extends Mage_Core_Controller_Front_Act
                         continue;
                     }
 
-                    $colorvalue = $color->color;
+                    $colorValue = $color->color;
                     $simple = $this->createSimpleProduct([
-                        'name' => $cat->product_name . ' ' . $type . ' ' . $colorvalue,
+                        'name' => $cat->product_name . ' ' . $type . ' ' . $colorValue,
                         'sku' => $color->SKU_Magento,
                         'price' => $price,
                         'attributes' => [
-                            'color' => $colorvalue,
+                            'color' => $colorValue,
                             'manufacturer' => $brand,
                             'model' => $model,
                             'type' => $type
@@ -107,19 +108,25 @@ class Gracious_ProdImport_IndexController extends Mage_Core_Controller_Front_Act
 
     }
 
+    /**
+     * @param $parentId
+     * @param $names
+     * @return mixed
+     */
     function createCategory($parentId, $names)
     {
         $path = [];
         foreach ($names as $name) {
             $category = Mage::getModel('catalog/category');
             $path[] = $name;
-            $existing = $category->getResourceCollection()
+            $existingCategory = $category->getResourceCollection()
                 ->addFieldToFilter('parent_id', $parentId)
                 ->addFieldToFilter('name', $name);
-            if (count($existing)) {
-                foreach ($existing as $ex) {
-                    $parentId = $ex->getId();
-                    $category = $ex;
+            if (count($existingCategory)) {
+
+                foreach ($existingCategory as $existing) {
+                    $parentId = $existing->getId();
+                    $category = $existing;
                 }
                 continue;
             }
@@ -497,51 +504,5 @@ class Gracious_ProdImport_IndexController extends Mage_Core_Controller_Front_Act
 class MagProdQuery
 {
 
-    protected $wheres = [];
-
-    function where($field, $op = null, $val = null, $bool = 'and')
-    {
-        if ($field instanceof Closure) {
-            $subq = new MagProdQuery();
-            $field($subq);
-            $this->wheres[] = ['type' => 'sub', 'query' => $subq, 'bool' => $bool];
-            return $this;
-        }
-        $this->wheres[] = ['type' => 'simple', 'field' => $field, 'op' => $op, 'val' => $val, 'bool' => $bool];
-        return $this;
-    }
-
-    function orWhere($field, $op = null, $val = null)
-    {
-        return $this->where($field, $op, $val, 'or');
-    }
-
-    function whereAttr($attr, $op, $val)
-    {
-        $this->wheres[] = ['type' => 'attr', 'attr' => $attr, 'op' => $op, 'val' => $val, 'bool' => 'and'];
-        return $this;
-    }
-
-    function get()
-    {
-        $collection = Mage::getModel('catalog/product')->getResourceCollection()
-            ->addAttributeToSelect('*');
-        foreach ($this->wheres as $where) {
-            if ($where['type'] == 'attr') {
-
-                try {
-                    $attr = Mage::getModel('catalog/product')->getResource()->getAttribute($where['attr']);
-                    $collection->addFieldToFilter([['attribute' => $where['attr'], 'eq' => $attr->getSource()->getOptionId($where['val'])]]);
-                } catch (Exception $ex) {
-                    echo '<pre>';
-                    print_r($ex->getMessage());
-                    echo '</pre>';
-                }
-            } else {
-                $collection->addFieldToFilter($where['field'], ['eq' => $where['val']]);
-            }
-        }
-        return $collection;
-    }
 
 }
