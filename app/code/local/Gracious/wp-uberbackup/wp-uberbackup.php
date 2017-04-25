@@ -234,7 +234,9 @@ function wp_ub_settings_page()
 {
 
 	if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+		ini_set('max_execution_time', 600);
 		$filename = wp_ub_settings_page_makebackup();
+
 		?>
 		<div class="wrap">
 			<p>Backup created with filename :<?php $filename?></p>
