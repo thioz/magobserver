@@ -38,6 +38,18 @@ class Gracious_Maglite_Query
         return $this;
     }
 
+    /**
+     * Because magento does not have a way to get the first fucking record 
+     * @return null | entity
+     *
+     */
+    function first(){
+        foreach($this->get() as $item){
+            return $item;
+        }
+        return null;
+    }
+
     function get()
     {
         $collection = $this->getBaseCollection();
